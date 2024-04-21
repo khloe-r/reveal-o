@@ -20,30 +20,30 @@ interface Guess {
 }
 
 const bgColours = [
-  "bg-lime-500",
-  "bg-lime-400",
-  "bg-lime-300",
-  "bg-lime-200",
-  "bg-lime-100",
-  "bg-yellow-100",
-  "bg-yellow-200",
-  "bg-yellow-300",
-  "bg-yellow-400",
+  "bg-lime-700",
+  "bg-lime-800",
+  "bg-lime-900",
+  "bg-green-700",
+  "bg-green-800",
+  "bg-green-900",
+  "bg-yellow-600",
+  "bg-yellow-700",
+  "bg-yellow-800",
   "bg-yellow-500",
-  "bg-orange-500",
-  "bg-orange-400",
-  "bg-orange-300",
-  "bg-orange-200",
-  "bg-orange-100",
-  "bg-rose-100",
-  "bg-rose-200",
-  "bg-rose-300",
-  "bg-rose-400",
-  "bg-rose-500",
+  "bg-amber-600",
+  "bg-amber-700",
+  "bg-amber-800",
+  "bg-orange-600",
+  "bg-orange-700",
+  "bg-orange-800",
   "bg-rose-600",
   "bg-rose-700",
   "bg-rose-800",
-  "bg-rose-900",
+  "bg-red-600",
+  "bg-red-700",
+  "bg-red-800",
+  "bg-red-900",
+  "bg-neutral-800",
 ];
 
 const shuffleArray = (array: string[]) => {
@@ -112,7 +112,7 @@ export default function Home({ data }: TopProps) {
   useMemo(() => {
     if (data && data.length) {
       setCurrentPhrase(data[0].phrase);
-      setLastHour((new Date().getHours() + 20) % 24);
+      setLastHour(new Date().getUTCHours());
     }
   }, [data]);
 
@@ -151,7 +151,7 @@ export default function Home({ data }: TopProps) {
   };
 
   const getGuessColour = (time: number) => {
-    const elapsed = new Date(time).getHours();
+    const elapsed = new Date(time).getUTCHours();
     return bgColours[elapsed];
   };
 
@@ -168,7 +168,7 @@ export default function Home({ data }: TopProps) {
 
       <div className="z-10 w-full max-w-5xl text-sm text-center mb-3">
         <h1 className="text-3xl">Reveal-o</h1>
-        <p>The phrase begins shuffled, every hour one more letter will be revealed at the start of the phrase. The faster the guess the better :)</p>
+        <p>The phrase begins shuffled at midnight UTC time, every hour one more letter will be revealed at the start of the phrase. The faster the guess the better :)</p>
       </div>
       <p className="mb-5">{currentPhrase}</p>
 
@@ -224,7 +224,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
       .toArray();
 
     word[0].uniquekey = btoa(word[0].phrase);
-    word[0].phrase = hideLetters(word[0].phrase, Math.min((today.getHours() + 20) % 24, word[0].phrase.length - 5));
+    word[0].phrase = hideLetters(word[0].phrase, Math.min(today.getUTCHours(), word[0].phrase.length - 5));
 
     return {
       props: { data: JSON.parse(JSON.stringify(word)) },
