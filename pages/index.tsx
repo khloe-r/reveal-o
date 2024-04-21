@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import clientPromise from "../lib/mongodb";
-import { GetStaticProps } from "next";
+import { GetServerSideProps } from "next";
 import { useEffect, useMemo, useState } from "react";
 
 interface Word {
@@ -207,16 +207,17 @@ export default function Home({ data }: TopProps) {
   );
 }
 
-export const getStaticProps: GetStaticProps<TopProps> = async () => {
+export const getServerSideProps: GetServerSideProps = async () => {
   try {
     const today = new Date();
+    const utc = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
     const client = await clientPromise;
     const db = client.db("daily-words");
     const word = await db
       .collection("answers")
       .find({
         $expr: {
-          $eq: [{ $dateToString: { format: "%Y-%m-%d", date: "$date" } }, { $dateToString: { format: "%Y-%m-%d", date: today } }],
+          $eq: [{ $dateToString: { format: "%Y-%m-%d", date: "$date" } }, { $dateToString: { format: "%Y-%m-%d", date: utc } }],
         },
       })
       .limit(10)
