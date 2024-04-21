@@ -161,7 +161,7 @@ export default function Home({ data }: TopProps) {
 
   return (
     <main className="flex font-mono min-h-screen flex-col items-center justify-left p-24">
-      <button className="lg:ml-4 p-3 place-self-start bg-slate-700 mb-8" disabled={victory != false || (data && data.length ? lastHour <= data[0].phrase.length - 5 : false)} onClick={handleHint}>
+      <button className="lg:ml-4 p-3 place-self-start bg-slate-700 mb-8" disabled={victory != false || (data && data.length ? lastHour > data[0].phrase.length - 5 : false)} onClick={handleHint}>
         {data && data.length && lastHour > data[0].phrase.length - 5 ? "No more hints!" : "Hint"}
       </button>
 
