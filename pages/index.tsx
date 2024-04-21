@@ -88,44 +88,41 @@ export default function Home({ data }: TopProps) {
   const [currentPhrase, setCurrentPhrase] = useState("");
   const [guesses, setGuesses] = useState<Guess[]>([]);
 
-  // async function fetchData(hour: number) {
-  //   const response = await fetch(`/api?hour=${hour}`, {
-  //     method: "GET",
-  //   });
-  //   const data = await response.json();
-  //   setData(data);
-  // }
-
   useEffect(() => {
-    if (localStorage.getItem("won") !== null) {
-      setVictory(localStorage.getItem("won") || "");
-      const g = localStorage
-        .getItem("guesses")
-        ?.split(",")
-        .map((guess) => {
-          const [word, time, winner] = guess.split("?");
-          return { word, time: parseInt(time), winner: winner === "WIN" };
-        });
-      setGuesses(g || []);
+    const today = new Date();
+    if (localStorage.getItem("currDay") !== `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`) {
+      localStorage.setItem("currDay", `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`);
+      localStorage.removeItem("guesses");
+      localStorage.removeItem("won");
+    } else if (localStorage.getItem("won") !== null) {
+      setVictory(localStorage.getItem("won") || false);
+      if (localStorage.getItem("guesses")) {
+        const g = localStorage
+          .getItem("guesses")
+          ?.split(",")
+          .map((guess) => {
+            const [word, time, winner] = guess.split("?");
+            return { word, time: parseInt(time), winner: winner === "WIN" };
+          });
+        setGuesses(g || []);
+      }
     }
   }, []);
 
   useMemo(() => {
     if (data && data.length) {
       setCurrentPhrase(data[0].phrase);
-      setLastHour(new Date().getHours());
+      setLastHour((new Date().getHours() + 20) % 24);
     }
   }, [data]);
 
   useMemo(() => {
     try {
-        if (localStorage && guesses.length > 0) {
-            localStorage.setItem("guesses", guesses.map((guess) => `${guess.word}?${guess.time}?${guess.winner ? "WIN" : "LOSE"}`).join(","));
-        }
-      } catch (error) {
-        console.error(error);
+      if (localStorage && guesses.length > 0) {
+        localStorage.setItem("currDay", new Date().toLocaleDateString());
+        localStorage.setItem("guesses", guesses.map((guess) => `${guess.word}?${guess.time}?${guess.winner ? "WIN" : "LOSE"}`).join(","));
       }
-    
+    } catch (error) {}
   }, [guesses]);
 
   const setInputWord = (e: React.ChangeEvent<HTMLInputElement>) => setWord(e.target.value);
@@ -148,6 +145,7 @@ export default function Home({ data }: TopProps) {
   const handleHint = () => {
     if (lastHour <= data[0].phrase.length - 5) {
       setHints((hint) => hint + 1);
+      setCurrentPhrase(hideLetters(atob(data[0].uniquekey), lastHour + 1));
       setLastHour((last) => last + 1);
     }
   };
@@ -164,13 +162,13 @@ export default function Home({ data }: TopProps) {
 
   return (
     <main className="flex font-mono min-h-screen flex-col items-center justify-left p-24">
-      <button className="lg:ml-4 p-3 place-self-start bg-slate-700" disabled={victory != false || (data && data.length ? lastHour <= data[0].phrase.length - 5 : false)} onClick={handleHint}>
-        {data && data.length && lastHour <= data[0].phrase.length - 5 ? "No more hints!" : "Hint"}
+      <button className="lg:ml-4 p-3 place-self-start bg-slate-700 mb-8" disabled={victory != false || (data && data.length ? lastHour <= data[0].phrase.length - 5 : false)} onClick={handleHint}>
+        {data && data.length && lastHour > data[0].phrase.length - 5 ? "No more hints!" : "Hint"}
       </button>
 
       <div className="z-10 w-full max-w-5xl text-sm text-center mb-3">
         <h1 className="text-3xl">Reveal-o</h1>
-        <p>Guess the phrase as fast as you can :)</p>
+        <p>The phrase begins shuffled, every hour one more letter will be revealed at the start of the phrase. The faster the guess the better :)</p>
       </div>
       <p className="mb-5">{currentPhrase}</p>
 
@@ -194,7 +192,7 @@ export default function Home({ data }: TopProps) {
 
           <br />
           <button className="lg:ml-4 p-3 bg-slate-700" disabled={word.length === 0 || victory != false}>
-            Submit
+            Guess
           </button>
         </form>
       </div>
@@ -225,7 +223,7 @@ export const getStaticProps: GetStaticProps<TopProps> = async () => {
       .toArray();
 
     word[0].uniquekey = btoa(word[0].phrase);
-    word[0].phrase = hideLetters(word[0].phrase, Math.min(today.getHours(), word[0].phrase.length - 5));
+    word[0].phrase = hideLetters(word[0].phrase, Math.min((today.getHours() + 20) % 24, word[0].phrase.length - 5));
 
     return {
       props: { data: JSON.parse(JSON.stringify(word)) },
