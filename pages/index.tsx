@@ -119,13 +119,12 @@ export default function Home({ data }: TopProps) {
   useMemo(() => {
     try {
       if (localStorage && guesses.length > 0) {
-        localStorage.setItem("currDay", new Date().toLocaleDateString());
         localStorage.setItem("guesses", guesses.map((guess) => `${guess.word}?${guess.time}?${guess.winner ? "WIN" : "LOSE"}`).join(","));
       }
     } catch (error) {}
   }, [guesses]);
 
-  const setInputWord = (e: React.ChangeEvent<HTMLInputElement>) => setWord(e.target.value);
+  const setInputWord = (e: React.ChangeEvent<HTMLInputElement>) => setWord((word) => (e.target.value.indexOf("?") === -1 ? e.target.value : word));
 
   const handleGuess = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -167,10 +166,10 @@ export default function Home({ data }: TopProps) {
       </button>
 
       <div className="z-10 w-full max-w-5xl text-sm text-center mb-3">
-        <h1 className="text-3xl">Reveal-o</h1>
+        <h1 className="text-3xl mb-4">Reveal-o</h1>
         <p>The phrase begins shuffled at midnight UTC time, every hour one more letter will be revealed at the start of the phrase. The faster the guess the better :)</p>
       </div>
-      <p className="mb-5">{currentPhrase}</p>
+      <p className="my-8">{currentPhrase}</p>
 
       {victory && (
         <div className="w-8/12 p-3 flex flex-col text-center items-center justify-center bg-green-100 text-black mb-5">
