@@ -187,8 +187,10 @@ export default function Home({ data }: TopProps) {
   };
 
   const getGuessColour = (time: number) => {
-    const elapsed = new Date(time).getUTCHours();
-    return bgColours[elapsed];
+    if (Math.floor(time / 20) >= bgColours.length) {
+      return bgColours[bgColours.length - 1];
+    }
+    return bgColours[Math.floor(time / 20)];
   };
 
   const generateCopy = () => {
