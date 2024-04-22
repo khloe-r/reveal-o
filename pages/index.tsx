@@ -111,7 +111,7 @@ export default function Home({ data }: TopProps) {
   }, [victory]);
 
   useMemo(() => {
-    if (Math.floor(seconds / 10) > lastMinute && lastHour < data[0].phrase.length - 5) {
+    if (Math.floor(seconds / 20) > lastMinute && lastHour < data[0].phrase.length - 5) {
       setCurrentPhrase(hideLetters(atob(data[0].uniquekey), lastHour + 1));
       setLastHour((last) => last + 1);
       setLastMinute((last) => last + 1);
@@ -209,7 +209,7 @@ export default function Home({ data }: TopProps) {
 
       <div className="z-10 w-full max-w-5xl text-sm text-center mb-3">
         <h1 className="text-3xl mb-4">Reveal-o</h1>
-        <p>A new phrase is revealed at midnight UTC time. The phrase begins shuffled and every 10 seconds one more letter will be revealed at the start of the phrase. The faster the guess the better :)</p>
+        <p>A new phrase is revealed at midnight UTC time. The phrase begins shuffled and every 20 seconds one more letter will be revealed at the start of the phrase. The faster the guess the better :)</p>
         <br />
         <p>Underlined letters are in the correct place</p>
         <br />
