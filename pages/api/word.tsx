@@ -40,18 +40,20 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const today = new Date();
     const client = await clientPromise;
     const db = client.db("daily-words");
-    const word = await db
-      .collection("answers")
-      .find({
-        $expr: {
-          $eq: [{ $dateToString: { format: "%Y-%m-%d", date: "$date" } }, { $dateToString: { format: "%Y-%m-%d", date: today } }],
-        },
-      })
-      .limit(10)
-      .toArray();
+    const word = await db.collection("answers").findOne({
+      $expr: {
+        $eq: [{ $dateToString: { format: "%Y-%m-%d", date: "$date" } }, { $dateToString: { format: "%Y-%m-%d", date: today } }],
+      },
+    });
 
-    word[0].uniquekey = btoa(word[0].phrase);
-    word[0].phrase = hideLetters(word[0].phrase, Math.min(today.getHours(), word[0].phrase.length - 5));
+    db.collection("answers").updateOne(
+      { _id: word?._id },
+      {
+        $inc: {
+          count: 1,
+        },
+      }
+    );
 
     res.json({ word });
   } catch (e) {

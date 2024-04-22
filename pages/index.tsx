@@ -90,6 +90,12 @@ export default function Home({ data }: TopProps) {
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [seconds, setSeconds] = useState(0);
 
+  async function recordVictory() {
+    const response = await fetch(`/api/word`, {
+      method: "POST",
+    });
+  }
+
   useMemo(() => {
     let intervalId: NodeJS.Timeout;
 
@@ -162,6 +168,7 @@ export default function Home({ data }: TopProps) {
         setVictory(word.toLocaleLowerCase());
         setGuesses([...guesses, { word, time: seconds, winner: true }]);
         localStorage.setItem("won", atob(data[0].uniquekey));
+        recordVictory();
       } else {
         setGuesses([...guesses, { word, time: seconds }]);
       }
