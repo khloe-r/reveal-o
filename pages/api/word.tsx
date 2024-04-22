@@ -37,9 +37,6 @@ const hideLetters = (phrase: string, hour: number) => {
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    // const searchParams = request.nextUrl.searchParams;
-    // const hour = searchParams.get("hour");
-
     const today = new Date();
     const client = await clientPromise;
     const db = client.db("daily-words");

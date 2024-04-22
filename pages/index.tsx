@@ -83,19 +83,46 @@ const hideLetters = (phrase: string, hour: number) => {
 export default function Home({ data }: TopProps) {
   const [word, setWord] = useState("");
   const [hints, setHints] = useState(0);
+  const [lastMinute, setLastMinute] = useState(0);
   const [lastHour, setLastHour] = useState(0);
   const [victory, setVictory] = useState<boolean | string>(false);
   const [currentPhrase, setCurrentPhrase] = useState("");
   const [guesses, setGuesses] = useState<Guess[]>([]);
+  const [seconds, setSeconds] = useState(0);
+
+  useMemo(() => {
+    let intervalId: NodeJS.Timeout;
+
+    if (victory == false) {
+      intervalId = setInterval(() => {
+        setSeconds((prevSeconds) => prevSeconds + 1);
+      }, 1000);
+    }
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [victory]);
+
+  useMemo(() => {
+    if (Math.floor(seconds / 10) > lastMinute && lastHour < data[0].phrase.length - 5) {
+      setCurrentPhrase(hideLetters(atob(data[0].uniquekey), lastHour + 1));
+      setLastHour((last) => last + 1);
+      setLastMinute((last) => last + 1);
+    }
+  }, [seconds]);
 
   useEffect(() => {
     const today = new Date();
-    if (localStorage.getItem("currDay") !== `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`) {
-      localStorage.setItem("currDay", `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`);
+    if (localStorage.getItem("currDay") !== `${today.getUTCFullYear()}-${today.getUTCMonth()}-${today.getUTCDate()}x`) {
+      localStorage.setItem("currDay", `${today.getUTCFullYear()}-${today.getUTCMonth()}-${today.getUTCDate()}x`);
       localStorage.removeItem("guesses");
       localStorage.removeItem("won");
-    } else if (localStorage.getItem("won") !== null) {
-      setVictory(localStorage.getItem("won") || false);
+      localStorage.removeItem("hints");
+    } else {
+      if (localStorage.getItem("won") !== null) {
+        setVictory(localStorage.getItem("won") || false);
+      }
       if (localStorage.getItem("guesses")) {
         const g = localStorage
           .getItem("guesses")
@@ -106,13 +133,15 @@ export default function Home({ data }: TopProps) {
           });
         setGuesses(g || []);
       }
+      if (localStorage.getItem("hints") !== null) {
+        setHints(parseInt(localStorage.getItem("hints") || "0"));
+      }
     }
   }, []);
 
   useMemo(() => {
     if (data && data.length) {
       setCurrentPhrase(data[0].phrase);
-      setLastHour(new Date().getUTCHours());
     }
   }, [data]);
 
@@ -131,10 +160,10 @@ export default function Home({ data }: TopProps) {
     if (victory == false) {
       if (word.toLocaleLowerCase() === atob(data[0].uniquekey)) {
         setVictory(word.toLocaleLowerCase());
-        setGuesses([...guesses, { word, time: Date.now(), winner: true }]);
+        setGuesses([...guesses, { word, time: seconds, winner: true }]);
         localStorage.setItem("won", atob(data[0].uniquekey));
       } else {
-        setGuesses([...guesses, { word, time: Date.now() }]);
+        setGuesses([...guesses, { word, time: seconds }]);
       }
 
       setWord("");
@@ -143,6 +172,7 @@ export default function Home({ data }: TopProps) {
 
   const handleHint = () => {
     if (lastHour <= data[0].phrase.length - 5) {
+      localStorage.setItem("hints", (hints + 1).toString());
       setHints((hint) => hint + 1);
       setCurrentPhrase(hideLetters(atob(data[0].uniquekey), lastHour + 1));
       setLastHour((last) => last + 1);
@@ -155,28 +185,40 @@ export default function Home({ data }: TopProps) {
   };
 
   const generateCopy = () => {
-    const message = `🎩 Reveal-o\n I guessed the answer at ${new Date(guesses?.at(guesses.length - 1)?.time || "").toLocaleString()} in ${guesses.length} guess${guesses.length > 1 ? "es" : ""} with ${hints} hint${hints > 1 ? "s" : ""}!`;
+    const message = `🎩 Reveal-o\n I guessed the answer in ${Math.floor((guesses?.at(guesses.length - 1)?.time || 0) / 60)} min ${(guesses?.at(guesses.length - 1)?.time || 0) % 60}s in ${guesses.length} guess${guesses.length > 1 ? "es" : ""} with ${hints} hint${
+      hints > 1 ? "s" : ""
+    }!\nhttps://reveal-o.vercel.app/`;
     navigator.clipboard.writeText(message);
   };
 
   return (
     <main className="flex font-mono min-h-screen flex-col items-center justify-left p-24">
-      <button className="lg:ml-4 p-3 place-self-start bg-slate-700 mb-8" disabled={victory != false || (data && data.length ? lastHour > data[0].phrase.length - 5 : false)} onClick={handleHint}>
-        {data && data.length && lastHour > data[0].phrase.length - 5 ? "No more hints!" : "Hint"}
-      </button>
+      <div className="place-self-start flex flex-col justify-end">
+        <button className="p-3 bg-slate-700 mb-8" disabled={victory != false || (data && data.length ? lastHour > data[0].phrase.length - 5 : false)} onClick={handleHint}>
+          {data && data.length && lastHour > data[0].phrase.length - 5 ? "No more hints!" : "Hint"}
+        </button>
+        <p className="text-sm">Hints: {hints}</p>
+      </div>
 
       <div className="z-10 w-full max-w-5xl text-sm text-center mb-3">
         <h1 className="text-3xl mb-4">Reveal-o</h1>
-        <p>The phrase begins shuffled at midnight UTC time, every hour one more letter will be revealed at the start of the phrase. The faster the guess the better :)</p>
+        <p>A new phrase is revealed at midnight UTC time. The phrase begins shuffled and every 10 seconds one more letter will be revealed at the start of the phrase. The faster the guess the better :)</p>
+        <br />
+        <p>Underlined letters are in the correct place</p>
+        <br />
+        <p>Time elapsed: {victory !== false ? `${Math.floor((guesses?.at(guesses.length - 1)?.time || 0) / 60)} min ${(guesses?.at(guesses.length - 1)?.time || 0) % 60}s` : `${Math.floor(seconds / 60)} min ${seconds % 60}s`}</p>
       </div>
-      <p className="my-8">{currentPhrase}</p>
+      <p className="my-8">
+        <span className="underline">{currentPhrase.substring(0, Math.min(lastHour, data[0].phrase.length - 5))}</span>
+        {currentPhrase.substring(Math.min(lastHour, data[0].phrase.length - 5), currentPhrase.length)}
+      </p>
 
       {victory && (
         <div className="w-8/12 p-3 flex flex-col text-center items-center justify-center bg-green-100 text-black mb-5">
           <p className="text-2xl">You won!</p>
           <p>
             Your winning guess was at
-            <br /> {new Date(guesses?.at(guesses.length - 1)?.time || "").toLocaleString()}
+            <br /> {Math.floor((guesses?.at(guesses.length - 1)?.time || 0) / 60)} min {(guesses?.at(guesses.length - 1)?.time || 0) % 60}s
           </p>
           <p>The phrase was &quot;{victory}&quot;</p>
           <button onClick={generateCopy} className="bg-green-500 p-2 mt-3">
@@ -199,7 +241,9 @@ export default function Home({ data }: TopProps) {
       {guesses.map((guess, index) => (
         <div key={index} className={`flex flex-row justify-between w-8/12 p-3 mt-4 ${guess.winner ? "bg-green-600" : getGuessColour(guess.time)}`}>
           <p>{guess.word}</p>
-          <p>{new Date(guess.time).toLocaleString().substring(11)}</p>
+          <p>
+            {Math.floor(guess.time / 60)} min {guess.time % 60}s
+          </p>
         </div>
       ))}
     </main>
@@ -223,7 +267,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
       .toArray();
 
     word[0].uniquekey = btoa(word[0].phrase);
-    word[0].phrase = hideLetters(word[0].phrase, Math.min(today.getUTCHours(), word[0].phrase.length - 5));
+    word[0].phrase = hideLetters(word[0].phrase, 0);
 
     return {
       props: { data: JSON.parse(JSON.stringify(word)) },
