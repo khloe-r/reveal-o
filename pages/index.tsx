@@ -193,7 +193,7 @@ export default function Home({ data }: TopProps) {
 
   const generateCopy = () => {
     const message = `🎩 Reveal-o\n I guessed the answer in ${Math.floor((guesses?.at(guesses.length - 1)?.time || 0) / 60)} min ${(guesses?.at(guesses.length - 1)?.time || 0) % 60}s in ${guesses.length} guess${guesses.length > 1 ? "es" : ""} with ${hints} hint${
-      hints > 1 ? "s" : ""
+      hints != 1 ? "s" : ""
     }!\nhttps://reveal-o.vercel.app/`;
     navigator.clipboard.writeText(message);
   };
