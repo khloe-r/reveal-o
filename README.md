@@ -1,6 +1,6 @@
 ## Reveal-o
 
-[https://reveal-o.vercel.app/
+[https://revealo.vercel.app/
 ](https://revealo.vercel.app/)
 Daily word game! How fast can you guess the scrambled phrase?
 
